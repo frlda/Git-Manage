@@ -19,3 +19,16 @@ python 3.8+
 开启 Git-Manage      ：启用插件
 更新全部仓库            ：更新全部通过Git管理的仓库
 ```
+### 注意
+建议运行时使用以下脚本
+```
+#!/bin/bash
+# 循环运行并记录日志
+while true
+do
+    python run.py >> run.log 2>&1
+    echo "Restarting automatically in 3 seconds (press Ctrl + C to cancel)" >> run.log
+    sleep 3
+done
+```
+创建在Hoshino根目录后赋予可执行权限
