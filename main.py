@@ -1,9 +1,13 @@
 from . import sv, MODULES_ON, MODULES_PATH
 from .libraries.git_tool import GitTool
 from hoshino.typing import CQEvent
+from hoshino import priv
 
 @sv.on_fullmatch('更新全部仓库')
 async def update_all_repos(bot, ev: CQEvent):
+    if not priv.check_priv(ev, priv.SUPERUSER):
+        await bot.send(ev, "抱歉，没有权限执行此操作。")
+        return
     success_messages = []
     error_messages = []
 

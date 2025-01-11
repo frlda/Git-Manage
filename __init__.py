@@ -11,5 +11,3 @@ SV_HELP = 'nothing'
 sv = Service('Git-Manage', manage_priv=priv.SUPERUSER, enable_on_default=False, help_=SV_HELP, visible=False)
 
 MODULES_PATH = Path(__file__).parent.parent
-ROOT = Path(__file__).parent
-SAMPLE = ROOT / 'data' / 'sample.json'
