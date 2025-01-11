@@ -31,4 +31,4 @@ do
     sleep 3
 done
 ```
-创建在Hoshino根目录后赋予可执行权限
+创建在Hoshino根目录后赋予可执行权限`chmod +x run_loop.sh`
