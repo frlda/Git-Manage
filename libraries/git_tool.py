@@ -1,3 +1,4 @@
+import re
 from git import Repo
 from pathlib import Path
 from typing import List
@@ -73,15 +74,51 @@ class GitTool:
             print(f"获取更新日志时出错：{e}")
             return []
 
-    def clone_repo(repo_url: str, target_path: str):
+    def clone_repo(repo_url: str):
         """
-        克隆远程仓库到指定路径。
+        克隆远程仓库到固定路径，并将仓库名添加到MODULES_ON集合中。
 
         :param repo_url: 远程仓库地址
-        :param target_path: 本地目标路径
         """
         try:
-            Repo.clone_from(repo_url, target_path)
-            print(f"成功克隆仓库到 {target_path}")
+            # 获取仓库名
+            repo_name = repo_url.rstrip('/').split('/')[-1].replace('.git', '')
+            MODULES_PATH = Path(__file__).parent.parent.parent / repo_name
+
+            # 克隆远程仓库到固定路径
+            Repo.clone_from(repo_url, MODULES_PATH)
+            print(f"成功克隆仓库到 {MODULES_PATH}")
+
+            # 更新__bot__.py文件中的MODULES_ON集合
+            config_file = Path(__file__).parent.parent.parent.parent / 'config' / '__bot__.py'
+            if not config_file.exists():
+                raise FileNotFoundError(f"配置文件 {config_file} 不存在！")
+
+            with open(config_file, 'r', encoding='utf-8') as f:
+                config_content = f.read()
+
+            # 使用正则表达式找到MODULES_ON集合并添加新的仓库名
+            modules_on_pattern = re.compile(r'MODULES_ON\s*=\s*{([^}]*)}')
+            match = modules_on_pattern.search(config_content)
+            if match:
+                # 提取集合内容
+                modules_on_content = match.group(1)
+                current_modules = set(
+                    item.strip().strip("'").strip('"') for item in modules_on_content.split(',') if item.strip())
+                current_modules.add(repo_name)  # 添加新的仓库名
+
+                # 格式化集合内容
+                new_modules_on_content = ', '.join(f"'{module}'" for module in sorted(current_modules))
+                new_config_content = config_content[:match.start(1)] + new_modules_on_content + config_content[
+                                                                                                match.end(1):]
+
+                # 写回配置文件
+                with open(config_file, 'w', encoding='utf-8') as f:
+                    f.write(new_config_content)
+                print(f"成功将仓库 {repo_name} 添加到 MODULES_ON 集合中")
+            else:
+                print("未找到 MODULES_ON 集合")
+            return repo_name
+
         except Exception as e:
-            print(f"克隆仓库时出错：{e}")
+            raise Exception(f"克隆仓库时出错：{e}")

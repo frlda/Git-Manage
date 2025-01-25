@@ -41,7 +41,7 @@ async def start_up(ev: CQEvent):
     except Exception as e:
         log.error(f"发送失败：{e}")
 
-@sv.on_fullmatch('更新全部仓库')
+@sv.on_fullmatch('更新全部仓库', '#更新全部仓库')
 async def update_all_repos(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.SUPERUSER):
         await bot.send(ev, "抱歉，没有权限执行此操作。")
@@ -79,17 +79,40 @@ async def update_all_repos(bot, ev: CQEvent):
 
     # 判断是否需要触发重启
     if updated_repos > 0:
-        await exit_after_update(updated_repos, total_repos, bot, ev)
+        await bot.send(ev, f"所有仓库更新完成，共更新了 {updated_repos}/{total_repos} 个仓库。")
+        print(f"所有仓库更新完成，共更新了 {updated_repos}/{total_repos} 个仓库。")
+        await exit_after_update(bot, ev)
     else:
         print("无已更新仓库")
 
 
-async def exit_after_update(updated_repos, total_repos, bot, ev):
+@sv.on_prefix('克隆仓库', '#克隆仓库')
+async def clone_repo(bot, ev: CQEvent):
+    """
+    克隆新的 Git 仓库
+    """
+    if not priv.check_priv(ev, priv.SUPERUSER):
+        await bot.send(ev, "抱歉，没有权限执行此操作。")
+        return
+
+    args = ev.message.extract_plain_text().strip().split()
+    if len(args) != 1:
+        await bot.send(ev, "请提供一个有效的仓库 URL。")
+        return
+
+    repo_url = args[0]
+    try:
+        repo_name = GitTool.clone_repo(repo_url)
+        await bot.send(ev, f"成功克隆仓库：{repo_url}\n仓库名：{repo_name}")
+        await exit_after_update(bot, ev)
+    except Exception as e:
+        await bot.send(ev, e)
+
+
+async def exit_after_update(bot, ev):
     """
     用于在更新完成后退出当前进程
     """
-    await bot.send(ev, f"所有仓库更新完成，共更新了 {updated_repos}/{total_repos} 个仓库。")
-    print(f"所有仓库更新完成，共更新了 {updated_repos}/{total_repos} 个仓库。")
     try:
         with open(SAMPLE, 'r', encoding='utf-8') as f:
             data = json.load(f)
