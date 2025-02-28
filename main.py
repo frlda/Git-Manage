@@ -21,7 +21,7 @@ async def start_up(ev: CQEvent):
         data = {}
 
     try:
-        if data["message_id"] != 0:
+        if data.get("message_id", 0) != 0:
             await bot.delete_msg(message_id=data["message_id"])
             data["message_id"] = 0
             with open(SAMPLE, 'w', encoding='utf-8') as f:
