@@ -9,8 +9,6 @@ from nonebot import on_websocket_connect
 
 @on_websocket_connect
 async def start_up(ev: CQEvent):
-    with open(SAMPLE, 'r', encoding='utf-8') as f:
-        data = json.loads(f.read())
 
     bot = get_bot()
 
