@@ -31,7 +31,7 @@ async def start_up(ev: CQEvent):
         log.error("撤回失败")
 
     try:
-        if data["reboot"] == "True":
+        if data and data.get("reboot") == "True":
             group_id = data["group_id"]
             await bot.send_group_msg(group_id=group_id, message=(f"[{BOTNAME} 启动成功]"))
             data["reboot"] = "False"
