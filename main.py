@@ -1,5 +1,6 @@
 import sys
 import json
+import os
 from . import sv, MODULES_ON, MODULES_PATH, BOTNAME, log, SAMPLE
 from .libraries.git_tool import GitTool
 from hoshino.typing import CQEvent
@@ -118,11 +119,16 @@ async def exit_after_update(bot, ev):
                 data = {}
     except (FileNotFoundError, json.JSONDecodeError):
         data = {}
+
     msg_id = await bot.send(ev, f"[{BOTNAME} 重启中...]")
     data["message_id"] = msg_id.get('message_id', None)
     data["reboot"] = "True"
     data["group_id"] = int(ev.group_id)
+
+    os.makedirs(os.path.dirname(SAMPLE), exist_ok=True)
+
     with open(SAMPLE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
+
     print("即将关闭进程...")
     sys.exit(0)
