@@ -91,7 +91,6 @@ async def clone_repo(bot, ev: CQEvent):
     克隆新的 Git 仓库
     """
     if not priv.check_priv(ev, priv.SUPERUSER):
-        await bot.send(ev, "抱歉，没有权限执行此操作。")
         return
 
     args = ev.message.extract_plain_text().strip().split()
