@@ -10,9 +10,7 @@ from nonebot import on_websocket_connect
 
 @on_websocket_connect
 async def start_up(ev: CQEvent):
-
     bot = get_bot()
-
     try:
         with open(SAMPLE, 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -55,16 +53,19 @@ async def update_all_repos(bot, ev: CQEvent):
         repo_path = MODULES_PATH / module
         try:
             git_tool = GitTool(str(repo_path))
-            update_status = git_tool.update_repo()
+            # 调用异步更新方法
+            update_status = await git_tool.update_repo_async()
 
             if update_status["status"] == "up-to-date":
                 success_messages.append(f"仓库 {module} 已是最新状态，无需更新。")
             elif update_status["status"] == "updated":
                 updated_repos += 1  # 记录有更新的仓库
                 commits_updated = update_status["commits_updated"]
-                update_logs = git_tool.get_update_logs(commits_updated)
+                update_logs = await git_tool.get_update_logs_async(commits_updated)
 
-                log_messages = "\n".join([f"{log['date']} {log['author']}: {log['message']}" for log in update_logs])
+                log_messages = "\n".join(
+                    [f"{log['date']} {log['author']}: {log['message']}" for log in update_logs]
+                )
                 success_messages.append(
                     f"仓库 {module} 更新成功，共更新了 {commits_updated} 个提交。\n更新日志:\n{log_messages}"
                 )
@@ -84,7 +85,6 @@ async def update_all_repos(bot, ev: CQEvent):
     else:
         print("无已更新仓库")
 
-
 @sv.on_prefix('克隆仓库', '#克隆仓库')
 async def clone_repo(bot, ev: CQEvent):
     """
@@ -100,12 +100,11 @@ async def clone_repo(bot, ev: CQEvent):
 
     repo_url = args[0]
     try:
-        repo_name = GitTool.clone_repo(repo_url)
+        repo_name = await GitTool.clone_repo_async(repo_url)
         await bot.send(ev, f"成功克隆仓库：{repo_url}\n仓库名：{repo_name}")
         await exit_after_update(bot, ev)
     except Exception as e:
-        await bot.send(ev, e)
-
+        await bot.send(ev, str(e))
 
 async def exit_after_update(bot, ev):
     """

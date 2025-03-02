@@ -1,19 +1,24 @@
+import asyncio
 import re
 from git import Repo
 from pathlib import Path
 from typing import List
 
+
 class GitTool:
     def __init__(self, repo_path: str):
         """
         初始化 Git 工具类。
-
         :param repo_path: Git 仓库的本地路径
         """
         self.repo_path = Path(repo_path)
         if not self.repo_path.exists() or not (self.repo_path / '.git').exists():
             raise ValueError(f"插件 {self.repo_path.name} 不是有效的 Git 仓库")
         self.repo = Repo(self.repo_path)
+
+    async def update_repo_async(self):
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self.update_repo)
 
     def update_repo(self):
         """
@@ -48,10 +53,13 @@ class GitTool:
         except Exception as e:
             raise Exception(f"更新仓库时出错：{e}")
 
+    async def get_update_logs_async(self, max_logs: int = 5) -> List[dict]:
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self.get_update_logs, max_logs)
+
     def get_update_logs(self, max_logs: int = 5) -> List[dict]:
         """
         获取当前分支的最新提交日志。
-
         :param max_logs: 要获取的提交日志数量，默认为 5。
         :return: 包含提交信息的字典列表，每个字典包含 'hash', 'author', 'date', 'message' 键。
         """
@@ -74,10 +82,15 @@ class GitTool:
             print(f"获取更新日志时出错：{e}")
             return []
 
+    @staticmethod
+    async def clone_repo_async(repo_url: str):
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, GitTool.clone_repo, repo_url)
+
+    @staticmethod
     def clone_repo(repo_url: str):
         """
-        克隆远程仓库到固定路径，并将仓库名添加到MODULES_ON集合中。
-
+        克隆远程仓库到固定路径，并将仓库名添加到 MODULES_ON 集合中。
         :param repo_url: 远程仓库地址
         """
         try:
@@ -89,7 +102,7 @@ class GitTool:
             Repo.clone_from(repo_url, MODULES_PATH)
             print(f"成功克隆仓库到 {MODULES_PATH}")
 
-            # 更新__bot__.py文件中的MODULES_ON集合
+            # 更新 __bot__.py 文件中的 MODULES_ON 集合
             config_file = Path(__file__).parent.parent.parent.parent / 'config' / '__bot__.py'
             if not config_file.exists():
                 raise FileNotFoundError(f"配置文件 {config_file} 不存在！")
@@ -97,22 +110,19 @@ class GitTool:
             with open(config_file, 'r', encoding='utf-8') as f:
                 config_content = f.read()
 
-            # 使用正则表达式找到MODULES_ON集合并添加新的仓库名
+            # 使用正则表达式找到 MODULES_ON 集合并添加新的仓库名
             modules_on_pattern = re.compile(r'MODULES_ON\s*=\s*{([^}]*)}')
             match = modules_on_pattern.search(config_content)
             if match:
-                # 提取集合内容
                 modules_on_content = match.group(1)
                 current_modules = set(
                     item.strip().strip("'").strip('"') for item in modules_on_content.split(',') if item.strip())
-                current_modules.add(repo_name)  # 添加新的仓库名
+                current_modules.add(repo_name)
 
-                # 格式化集合内容
                 new_modules_on_content = ', '.join(f"'{module}'" for module in sorted(current_modules))
                 new_config_content = config_content[:match.start(1)] + new_modules_on_content + config_content[
                                                                                                 match.end(1):]
 
-                # 写回配置文件
                 with open(config_file, 'w', encoding='utf-8') as f:
                     f.write(new_config_content)
                 print(f"成功将仓库 {repo_name} 添加到 MODULES_ON 集合中")
