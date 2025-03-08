@@ -43,7 +43,7 @@ async def update_all_repos(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.SUPERUSER):
         await bot.send(ev, "抱歉，没有权限执行此操作。")
         return
-
+    await bot.send(ev, "开始更新所有仓库...")
     success_messages = []
     error_messages = []
     updated_repos = 0  # 记录有更新的仓库数量
