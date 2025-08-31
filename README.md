@@ -1,6 +1,6 @@
 # Git-Manage
-基于 [HoshinoBotv2](https://github.com/Ice9Coffee/HoshinoBot) 的用于更新通过Git管理的插件
-
+基于 [HoshinoBotv2](https://github.com/Ice9Coffee/HoshinoBot) 的用于更新通过Git管理的插件（新增手动重启）
+本项目适用于linux环境下
 ## 使用前置
 ```bash
 pip install -r requirements.txt
@@ -19,20 +19,18 @@ python 3.8+
 开启 Git-Manage         ：启用插件
 #更新全部仓库            ：更新全部通过Git管理的仓库
 #克隆版仓库 [仓库链接]    ：克隆指定仓库到Hoshino插件目录下，需保证链接最后路径为插件名
+#reloading or 一键重启      ：手动重启hoshino
 ```
 ## 注意
-建议运行时使用以下脚本
-```
-#!/bin/bash
-# 循环运行并记录日志
-while true
-do
-    python run.py >> run.log 2>&1
-    echo "Restarting automatically in 3 seconds (press Ctrl + C to cancel)" >> run.log
-    sleep 3
-done
-```
+建议运行时使用文件夹中以下脚本
+run_loop.sh
+
 创建在Hoshino根目录后赋予可执行权限`chmod +x run_loop.sh`
+
+之后启动hoshinobot，请使用指令
+```
+./run_loop.sh
+```
 
 ## 致谢
 | Nickname         | Contribution      |
