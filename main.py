@@ -1,12 +1,30 @@
 import sys
 import json
 import os
+import asyncio
+import signal
 from . import sv, MODULES_ON, MODULES_PATH, BOTNAME, log, SAMPLE
 from .libraries.git_tool import GitTool
 from hoshino.typing import CQEvent
 from hoshino import priv
-from nonebot import get_bot
-from nonebot import on_websocket_connect
+from nonebot import get_bot, on_websocket_connect
+
+#关闭进程
+async def graceful_shutdown():
+    log.info("开始关闭进程...")
+    loop = asyncio.get_event_loop()
+
+    # 获取所有任务
+    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+    log.info(f"正在取消 {len(tasks)} 个任务...")
+
+    for task in tasks:
+        task.cancel()
+
+    await asyncio.gather(*tasks, return_exceptions=True)
+    log.info("所有任务已完成或取消。")
+
+    loop.stop()
 
 @on_websocket_connect
 async def start_up(ev: CQEvent):
@@ -46,20 +64,19 @@ async def update_all_repos(bot, ev: CQEvent):
     await bot.send(ev, "开始更新所有仓库...")
     success_messages = []
     error_messages = []
-    updated_repos = 0  # 记录有更新的仓库数量
-    total_repos = len(MODULES_ON)  # 总仓库数量
+    updated_repos = 0
+    total_repos = len(MODULES_ON)
 
     for module in MODULES_ON:
         repo_path = MODULES_PATH / module
         try:
             git_tool = GitTool(str(repo_path))
-            # 调用异步更新方法
             update_status = await git_tool.update_repo_async()
 
             if update_status["status"] == "up-to-date":
                 success_messages.append(f"仓库 {module} 已是最新状态，无需更新。")
             elif update_status["status"] == "updated":
-                updated_repos += 1  # 记录有更新的仓库
+                updated_repos += 1
                 commits_updated = update_status["commits_updated"]
                 update_logs = await git_tool.get_update_logs_async(commits_updated)
 
@@ -77,7 +94,6 @@ async def update_all_repos(bot, ev: CQEvent):
     if error_messages:
         await bot.send(ev, "\n".join(error_messages))
 
-    # 判断是否需要触发重启
     if updated_repos > 0:
         await bot.send(ev, f"所有仓库更新完成，共更新了 {updated_repos}/{total_repos} 个仓库。")
         print(f"所有仓库更新完成，共更新了 {updated_repos}/{total_repos} 个仓库。")
@@ -87,9 +103,6 @@ async def update_all_repos(bot, ev: CQEvent):
 
 @sv.on_prefix('克隆仓库', '#克隆仓库')
 async def clone_repo(bot, ev: CQEvent):
-    """
-    克隆新的 Git 仓库
-    """
     if not priv.check_priv(ev, priv.SUPERUSER):
         return
 
@@ -125,8 +138,20 @@ async def exit_after_update(bot, ev):
 
     os.makedirs(os.path.dirname(SAMPLE), exist_ok=True)
 
-    with open(SAMPLE, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+    try:
+        with open(SAMPLE, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+    finally:
+        await graceful_shutdown()
 
-    print("即将关闭进程...")
-    sys.exit(0)
+@sv.on_fullmatch('一键重启', 'reloading')
+async def restart_bot(bot, ev: CQEvent):
+    """
+    手动重启机器人
+    """
+    if not priv.check_priv(ev, priv.SUPERUSER):
+        await bot.send(ev, "抱歉，只有超级管理员才能执行此操作。")
+        return
+
+    await bot.send(ev, "收到重启命令，正在准备重启...")
+    await exit_after_update(bot, ev)
