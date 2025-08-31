@@ -25,7 +25,7 @@ python 3.8+
 建议运行时使用文件夹中以下脚本
 run_loop.sh
 
-创建在Hoshino根目录后赋予可执行权限`chmod +x run_loop.sh`
+移动到Hoshino根目录后（即run.py所在目录）赋予可执行权限`chmod +x run_loop.sh`
 
 之后启动hoshinobot，请使用指令
 ```
